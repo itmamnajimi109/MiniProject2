@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         header("Location: index.php");
         exit();
     } else {
-        $error = "Username atau Password salah!";
+        $error = "Invalid Username or Password!";
     }
 }
 ?>
