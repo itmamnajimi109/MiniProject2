@@ -10,7 +10,7 @@ $reg_id = (int)$_GET['id'];
 $student_id = $_SESSION['user_id'];
 
 // Security: Ensure the registration belongs to the logged-in student
-$stmt = $pdo->prepare("DELETE FROM registrations WHERE reg_id = ? AND user_id = ?");
+$stmt = $pdo->prepare("DELETE FROM registrations WHERE reg_id = ? AND student_id = ?");
 if ($stmt->execute([$reg_id, $student_id])) {
     $_SESSION['flash'] = ['type' => 'warning', 'message' => 'Course dropped successfully.'];
 } else {

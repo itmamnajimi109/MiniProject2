@@ -10,10 +10,10 @@ $student_id = $_SESSION['user_id'];
 
 // Fetch registered courses ONLY
 $stmt = $pdo->prepare("
-    SELECT r.reg_id, c.course_code, c.course_name, c.credit_hours 
+    SELECT r.reg_id, c.course_id, c.course_name, c.credits
     FROM registrations r
     JOIN courses c ON r.course_id = c.course_id
-    WHERE r.user_id = ?
+    WHERE r.student_id = ?
 ");
 $stmt->execute([$student_id]);
 $my_courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -55,7 +55,7 @@ include 'header.php';
             <table class="table table-hover align-middle mb-0 text-center">
                 <thead>
                     <tr>
-                        <th>Code</th>
+                        <th>Course ID</th>
                         <th>Course Name</th>
                         <th>Credits</th>
                         <th>Action</th>
@@ -68,9 +68,9 @@ include 'header.php';
                     <?php else: ?>
                         <?php foreach($my_courses as $row): ?>
                             <tr>
-                                <td><strong><?= htmlspecialchars($row['course_code']) ?></strong></td>
-                                <td class="text-start"><?= htmlspecialchars($row['course_name']) ?></td>
-                                <td><?= $row['credit_hours'] ?></td>
+                                <td><strong><?= htmlspecialchars($row['course_id']) ?></strong></td>
+                                <td><?= htmlspecialchars($row['course_name']) ?></td>
+                                <td><?= $row['credits'] ?></td>
                                 <td>
                                     <a href="drop_course.php?id=<?= $row['reg_id'] ?>" 
                                        class="btn btn-danger btn-sm"

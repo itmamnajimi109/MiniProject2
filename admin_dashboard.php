@@ -11,36 +11,88 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
+    // ADD COURSE
     if ($action === 'add_course') {
-        $code    = trim($_POST['course_code'] ?? '');
+        // course_id is auto_incremented
         $name    = trim($_POST['course_name'] ?? '');
-        $credits = (int)($_POST['credit_hours'] ?? 0);
+        $credits = (int)($_POST['credits'] ?? 0);
 
-        if ($code && $name) {
+        if ($name) {
             try {
                 $pdo->prepare("
-                    INSERT INTO courses (course_code, course_name, credit_hours)
-                    VALUES (?, ?, ?)
-                ")->execute([$code, $name, $credits]);
+                    INSERT INTO courses (course_name, credits)
+                    VALUES (?, ?)
+                ")->execute([$name, $credits]);
 
                 $_SESSION['flash'] = [
                     'type' => 'success',
-                    'message' => "Course <strong>$code</strong> added successfully."
+                    'message' => "Course <strong>$name</strong> added successfully."
                 ];
             } catch (PDOException $e) {
                 $_SESSION['flash'] = [
                     'type' => 'danger',
-                    'message' => 'Something went wrong.'
+                    'message' => 'Error adding course.'
+                    . $e->getMessage()
                 ];
             }
         }
-
-        header('Location: admin_dashboard.php');
-        exit;
     }
+
+    // EDIT COURSE
+    if ($action === 'edit_course') {
+        $id      = $_POST['course_id'] ?? '';
+        $name    = trim($_POST['course_name'] ?? '');
+        $credits = (int)($_POST['credits'] ?? 0);
+
+        if ($id && $name) {
+            try {
+                $pdo->prepare("
+                    UPDATE courses 
+                    SET course_name = ?, credits = ? 
+                    WHERE course_id = ?
+                ")->execute([$name, $credits, $id]);
+
+                $_SESSION['flash'] = [
+                    'type' => 'success',
+                    'message' => "Course updated."
+                ];
+            } catch (PDOException $e) {
+                $_SESSION['flash'] = [
+                    'type' => 'danger', 
+                    'message' => 'Update failed: ' 
+                    . $e->getMessage()
+                ];
+            }
+        }
+    }
+
+    // DELETE COURSE
+    if ($action === 'delete_course') {
+        $id = $_POST['course_id'] ?? '';
+        if ($id) {
+            try {
+                $pdo->prepare("
+                    DELETE FROM courses 
+                    WHERE course_id = ?
+                ")->execute([$id]);
+
+                $_SESSION['flash'] = [
+                    'type' => 'success', 
+                    'message' => "Course removed."
+                ];
+            } catch (PDOException $e) {
+                $_SESSION['flash'] = [
+                    'type' => 'danger', 
+                    'message' => 'Delete failed. It might be linked to other records.'];
+            }
+        }
+    }
+
+    header('Location: admin_dashboard.php');
+    exit;
 }
 
-$courses = $pdo->query("SELECT * FROM courses ORDER BY course_code")->fetchAll();
+$courses = $pdo->query("SELECT * FROM courses ORDER BY course_id")->fetchAll();
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -91,8 +143,7 @@ include 'header.php';
                 <table class="table table-hover mb-0 align-middle">
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>Code</th>
+                            <th>Course ID</th>
                             <th>Course Name</th>
                             <th>Credit Hours</th>
                             <th class="text-center">Actions</th>
@@ -101,22 +152,19 @@ include 'header.php';
                     <tbody>
                         <?php foreach ($courses as $i => $c): ?>
                         <tr>
-                            <td><?= $i + 1 ?></td>
-                            <td><span class="badge bg-primary"><?= htmlspecialchars($c['course_code']) ?></span></td>
+                            <td><span class="badge bg-primary"><?= htmlspecialchars($c['course_id']) ?></span></td>
                             <td><?= htmlspecialchars($c['course_name']) ?></td>
-                            <td><?= (int)$c['credit_hours'] ?></td>
+                            <td><?= (int)$c['credits'] ?></td>
                             <td class="text-center">
                                 <button class="btn btn-sm btn-outline-primary btn-icon me-1 edit-btn" 
                                         data-id="<?= $c['course_id'] ?>"
-                                        data-code="<?= htmlspecialchars($c['course_code'], ENT_QUOTES) ?>"
                                         data-name="<?= htmlspecialchars($c['course_name'], ENT_QUOTES) ?>"
-                                        data-credits="<?= (int)$c['credit_hours'] ?>"
+                                        data-credits="<?= (int)$c['credits'] ?>"
                                         data-bs-toggle="modal" data-bs-target="#editCourseModal">
                                     <i class="bi bi-pencil"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger btn-icon delete-btn"
                                         data-id="<?= $c['course_id'] ?>"
-                                        data-code="<?= htmlspecialchars($c['course_code'], ENT_QUOTES) ?>"
                                         data-name="<?= htmlspecialchars($c['course_name'], ENT_QUOTES) ?>"
                                         data-bs-toggle="modal" data-bs-target="#deleteCourseModal">
                                     <i class="bi bi-trash"></i>
@@ -143,16 +191,12 @@ include 'header.php';
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Course Code *</label>
-                        <input type="text" name="course_code" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label">Course Name *</label>
                         <input type="text" name="course_name" class="form-control" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Credit Hours</label>
-                        <input type="number" name="credit_hours" class="form-control" value="3" min="0">
+                        <input type="number" name="credits" class="form-control" value="3" min="0">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -175,16 +219,12 @@ include 'header.php';
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Course Code *</label>
-                        <input type="text" name="course_code" id="edit_course_code" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label">Course Name *</label>
                         <input type="text" name="course_name" id="edit_course_name" class="form-control" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Credit Hours</label>
-                        <input type="number" name="credit_hours" id="edit_credit_hours" class="form-control" min="0">
+                        <input type="number" name="credits" id="edit_credit_hours" class="form-control" min="0">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -223,7 +263,6 @@ include 'header.php';
 document.querySelectorAll('.edit-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.getElementById('edit_course_id').value    = btn.dataset.id;
-        document.getElementById('edit_course_code').value  = btn.dataset.code;
         document.getElementById('edit_course_name').value  = btn.dataset.name;
         document.getElementById('edit_credit_hours').value = btn.dataset.credits;
     });
@@ -232,7 +271,7 @@ document.querySelectorAll('.edit-btn').forEach(btn => {
 document.querySelectorAll('.delete-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.getElementById('delete_course_id').value = btn.dataset.id;
-        document.getElementById('delete_course_label').textContent = btn.dataset.code;
+        document.getElementById('delete_course_label').textContent = btn.dataset.name;
     });
 });
 </script>

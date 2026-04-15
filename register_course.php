@@ -18,7 +18,7 @@ $stmt->execute([$course_id, $course_id]);
 $course = $stmt->fetch();
 
 if ($course) {
-    $insert = $pdo->prepare("INSERT INTO registrations (user_id, course_id) VALUES (?, ?)");
+    $insert = $pdo->prepare("INSERT INTO registrations (student_id, course_id) VALUES (?, ?)");
     if ($insert->execute([$student_id, $course_id])) {
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Successfully registered for the course!'];
     }

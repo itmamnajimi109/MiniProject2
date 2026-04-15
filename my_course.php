@@ -13,7 +13,7 @@ $student_id = $_SESSION['user_id'];
 $stmt_avail = $pdo->prepare("
     SELECT * FROM courses 
     WHERE course_id NOT IN (
-        SELECT course_id FROM registrations WHERE user_id = ?
+        SELECT course_id FROM registrations WHERE student_id = ?
     )
 ");
 $stmt_avail->execute([$student_id]);
@@ -60,7 +60,7 @@ include 'header.php';
             <table class="table table-hover align-middle mb-0 text-center">
                 <thead>
                     <tr>
-                        <th>Code</th>
+                        <th>Course ID</th>
                         <th>Course Name</th>
                         <th>Credits</th>
                         <th>Action</th>
@@ -72,9 +72,9 @@ include 'header.php';
                     <?php else: ?>
                         <?php foreach($available_courses as $c): ?>
                             <tr>
-                                <td><span class="badge bg-secondary"><?= htmlspecialchars($c['course_code']) ?></span></td>
+                                <td><span class="badge bg-secondary"><?= htmlspecialchars($c['course_id']) ?></span></td>
                                 <td class="text-start"><?= htmlspecialchars($c['course_name']) ?></td>
-                                <td><?= $c['credit_hours'] ?></td>
+                                <td><?= $c['credits'] ?></td>
                                 <td>
                                     <a href="register_course.php?id=<?= $c['course_id'] ?>" class="btn btn-success btn-sm">
                                         Register
